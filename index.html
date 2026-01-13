@@ -82,6 +82,30 @@
     footer a:hover {
       text-decoration: underline;
     }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    .badge-blockchain {
+      background: rgba(255, 159, 67, 0.2);
+      color: #ff9f43;
+    }
+    .section-divider {
+      margin: 32px 0 24px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -113,6 +137,13 @@
       <a href="concentrated-liquidity.html" class="example">
         <div class="example-title">Concentrated Liquidity</div>
         <div class="example-desc">See how narrowing your price range increases capital efficiency in Uniswap v3 style pools.</div>
+      </a>
+
+      <div class="section-divider">Blockchain Basics</div>
+
+      <a href="seed-phrase-entropy.html" class="example">
+        <div class="example-title">Seed Phrase Entropy<span class="badge badge-blockchain">Blockchain</span></div>
+        <div class="example-desc">Why nobody can guess your 12-word seed phrase. Visualize the astronomical number of possibilities with a slot machine animation.</div>
       </a>
     </div>
 

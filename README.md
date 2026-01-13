@@ -1,6 +1,6 @@
 # defi-visualized
 
-> **AI Coding Alert:** This repository was built with AI assistance. While the results have been manually reviewed, there are no guarantees of correctness. Use these visualizations for educational purposes only — do not make financial decisions based on them.
+> **Version 0.1 — AI Coding Alert:** This repository was built with AI assistance and is subject to change. While the results have been manually reviewed, there are no guarantees of correctness. Use these visualizations for educational purposes only — do not make financial decisions based on them.
 
 Interactive visualizations that explain DeFi concepts. Each example is a single HTML file with no dependencies — just open in a browser and explore.
 

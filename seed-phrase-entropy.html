@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seed Phrase Entropy - DeFi Visualized</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e4e4e4;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00d9ff;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 30px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 20px;
+    }
+    .slots-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 600px) {
+      .slots-container {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    .slot {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      height: 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .slot.active {
+      border: 2px solid #00d9ff;
+      box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+    .slot.filled {
+      border: 2px solid #51cf66;
+    }
+    .slot.empty {
+      border: 2px solid #444;
+    }
+    .slot-number {
+      font-size: 10px;
+      color: #666;
+      position: absolute;
+      top: 4px;
+      left: 8px;
+    }
+    .slot-word {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      height: 24px;
+      overflow: hidden;
+    }
+    .slot.spinning .slot-word {
+      animation: spin 0.1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: translateY(-100%); opacity: 0; }
+      50% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(100%); opacity: 0; }
+    }
+    .slot-choices {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+    .slot.checksum {
+      border-color: #ff9f43;
+    }
+    .slot.checksum .slot-number {
+      color: #ff9f43;
+    }
+    .slot.checksum.filled {
+      border-color: #ff9f43;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    button {
+      padding: 14px 32px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    button:hover {
+      transform: scale(1.02);
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00d9ff, #00b8d9);
+      color: #000;
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .total-section {
+      text-align: center;
+      padding: 24px;
+      background: rgba(0, 217, 255, 0.1);
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .total-label {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .total-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #00d9ff;
+      word-break: break-all;
+      font-family: 'Courier New', monospace;
+    }
+    .total-scientific {
+      font-size: 18px;
+      color: #888;
+      margin-top: 8px;
+    }
+    .formula {
+      font-family: 'Courier New', monospace;
+      color: #ff9f43;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+    .comparisons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .comparison {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    .comparison-icon {
+      font-size: 28px;
+      width: 50px;
+      text-align: center;
+    }
+    .comparison-info {
+      flex: 1;
+    }
+    .comparison-name {
+      font-size: 14px;
+      color: #e4e4e4;
+      margin-bottom: 4px;
+    }
+    .comparison-value {
+      font-size: 13px;
+      color: #888;
+      font-family: 'Courier New', monospace;
+    }
+    .comparison-bar-container {
+      width: 120px;
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .comparison-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #51cf66, #00d9ff);
+      border-radius: 4px;
+      transition: width 0.5s;
+    }
+    .comparison.exceeded .comparison-bar {
+      background: linear-gradient(90deg, #00d9ff, #ff9f43);
+    }
+    .comparison.exceeded .comparison-name {
+      color: #51cf66;
+    }
+    .time-section {
+      text-align: center;
+      padding: 20px;
+      background: rgba(255, 107, 107, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 107, 107, 0.3);
+    }
+    .time-label {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .time-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #ff6b6b;
+    }
+    .time-note {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+    }
+    .section-title {
+      font-size: 14px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .word-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .word-toggle button {
+      padding: 8px 20px;
+      border: 2px solid #444;
+      border-radius: 8px;
+      background: transparent;
+      color: #888;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .word-toggle button.active {
+      border-color: #00d9ff;
+      color: #00d9ff;
+      background: rgba(0, 217, 255, 0.1);
+    }
+    .word-toggle button:hover:not(.active) {
+      border-color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Seed Phrase Entropy</h1>
+    <p class="subtitle" id="subtitle">Why nobody can guess your seed phrase — the numbers are astronomical</p>
+
+    <div class="card">
+      <div class="word-toggle">
+        <button id="btn12" class="active" onclick="setWordCount(12)">12 Words</button>
+        <button id="btn24" onclick="setWordCount(24)">24 Words</button>
+      </div>
+      <div class="section-title" id="sectionTitle">BIP39 Seed Phrase (11 words + checksum)</div>
+      <div class="slots-container" id="slots"></div>
+      <div class="controls">
+        <button class="btn-primary" id="spinBtn" onclick="spinNext()">Pick Word #1</button>
+        <button class="btn-secondary" id="skipBtn" onclick="skipToEnd()">Skip to End</button>
+        <button class="btn-secondary" onclick="reset()">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="total-section">
+        <div class="total-label">Total Possible Combinations</div>
+        <div class="formula" id="formula">2048 choices per word (128 for checksum)</div>
+        <div class="total-value" id="totalValue">1</div>
+        <div class="total-scientific" id="totalScientific"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">How Big Is This Number?</div>
+      <div class="comparisons" id="comparisons"></div>
+    </div>
+
+    <div class="card">
+      <div class="time-section">
+        <div class="time-label">Time to try all combinations at 1 trillion guesses/second</div>
+        <div class="time-value" id="timeValue">0 seconds</div>
+        <div class="time-note">Even with all computers on Earth combined, this is impossible</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BIP39_WORDS = 2048;
+    let totalWords = 12;
+    // Checksum choices: 12 words = 128 (7 bits free), 24 words = 8 (3 bits free)
+    const CHECKSUM_MAP = { 12: 128, 24: 8 };
+    const ENTROPY_BITS = { 12: 128, 24: 256 };
+
+    // Sample BIP39 words for animation (distributed across alphabet)
+    const sampleWords = [
+      'abandon', 'apple', 'arena', 'bachelor', 'banana', 'blade', 'bright', 'bronze',
+      'camera', 'carbon', 'castle', 'chair', 'cherry', 'cloud', 'cobra', 'cruise',
+      'damage', 'dawn', 'desert', 'diamond', 'dolphin', 'dragon', 'dream', 'drift',
+      'eagle', 'earth', 'elder', 'electric', 'element', 'embark', 'energy', 'engine',
+      'fabric', 'falcon', 'family', 'fashion', 'film', 'flame', 'flower', 'forest',
+      'galaxy', 'garage', 'garden', 'genius', 'ghost', 'ginger', 'globe', 'gravity',
+      'hammer', 'harbor', 'harvest', 'helmet', 'hidden', 'hockey', 'horizon', 'hybrid',
+      'impact', 'import', 'infant', 'initial', 'insect', 'iron', 'island', 'ivory',
+      'jacket', 'jaguar', 'jazz', 'jelly', 'jewel', 'journey', 'jungle', 'junior',
+      'kangaroo', 'kernel', 'kingdom', 'kitchen', 'kiwi', 'knife', 'knight', 'koala',
+      'label', 'ladder', 'lamp', 'laptop', 'lemon', 'leopard', 'liberty', 'lunar',
+      'machine', 'magnet', 'mammal', 'mango', 'marble', 'meadow', 'monkey', 'mountain',
+      'napkin', 'narrow', 'nature', 'neck', 'neutral', 'night', 'noble', 'north',
+      'oasis', 'object', 'ocean', 'olive', 'onion', 'opera', 'orange', 'orbit',
+      'paddle', 'palace', 'panda', 'paper', 'peace', 'piano', 'pilot', 'planet',
+      'quantum', 'queen', 'question', 'quick', 'quiz', 'quote', 'rabbit', 'radar',
+      'saddle', 'salmon', 'saturn', 'scout', 'shadow', 'silver', 'solar', 'spirit',
+      'table', 'talent', 'taxi', 'temple', 'tiger', 'timber', 'tornado', 'trophy',
+      'umbrella', 'uncle', 'uniform', 'unique', 'universe', 'upgrade', 'urban', 'useful',
+      'vacuum', 'valley', 'vanilla', 'vapor', 'velvet', 'village', 'vintage', 'violin',
+      'waffle', 'wallet', 'warrior', 'wealth', 'whale', 'winter', 'wisdom', 'wolf',
+      'yellow', 'yoga', 'young', 'zebra', 'zero', 'zone', 'abandon', 'zoo'
+    ];
+
+    const comparisons = [
+      { icon: '🏖️', name: 'Grains of sand on Earth', value: 7.5e18, exp: '7.5 × 10¹⁸' },
+      { icon: '💧', name: 'Drops of water in all oceans', value: 2e25, exp: '2 × 10²⁵' },
+      { icon: '⭐', name: 'Stars in observable universe', value: 1e24, exp: '10²⁴' },
+      { icon: '🌍', name: 'Atoms on planet Earth', value: 1e50, exp: '10⁵⁰' },
+      { icon: '🌌', name: 'Atoms in observable universe', value: 1e80, exp: '10⁸⁰' },
+    ];
+
+    let currentWord = 0;
+    let isSpinning = false;
+    let spinInterval = null;
+    let totalCombinations = 1n;
+
+    function init() {
+      const slotsContainer = document.getElementById('slots');
+      slotsContainer.innerHTML = '';
+
+      for (let i = 0; i < totalWords; i++) {
+        const slot = document.createElement('div');
+        const isChecksum = i === totalWords - 1;
+        slot.className = 'slot empty' + (isChecksum ? ' checksum' : '');
+        slot.id = `slot-${i}`;
+        slot.innerHTML = `
+          <div class="slot-number">${isChecksum ? 'checksum' : '#' + (i + 1)}</div>
+          <div class="slot-word">—</div>
+          <div class="slot-choices"></div>
+        `;
+        slotsContainer.appendChild(slot);
+      }
+
+      // Update section title
+      document.getElementById('sectionTitle').textContent =
+        `BIP39 Seed Phrase (${totalWords - 1} words + checksum)`;
+
+      renderComparisons();
+      updateDisplay();
+    }
+
+    function setWordCount(count) {
+      totalWords = count;
+      document.getElementById('btn12').classList.toggle('active', count === 12);
+      document.getElementById('btn24').classList.toggle('active', count === 24);
+      reset();
+    }
+
+    function renderComparisons() {
+      const container = document.getElementById('comparisons');
+      container.innerHTML = comparisons.map((c, i) => `
+        <div class="comparison" id="comparison-${i}">
+          <div class="comparison-icon">${c.icon}</div>
+          <div class="comparison-info">
+            <div class="comparison-name">${c.name}</div>
+            <div class="comparison-value">${c.exp}</div>
+          </div>
+          <div class="comparison-bar-container">
+            <div class="comparison-bar" id="bar-${i}" style="width: 0%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getRandomWord() {
+      return sampleWords[Math.floor(Math.random() * sampleWords.length)];
+    }
+
+    function formatBigInt(n) {
+      const str = n.toString();
+      if (str.length <= 12) {
+        return str.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+      return str;
+    }
+
+    function toScientific(n) {
+      const str = n.toString();
+      const exp = str.length - 1;
+      if (exp < 6) return '';
+      const mantissa = str[0] + '.' + str.slice(1, 3);
+      return `≈ ${mantissa} × 10^${exp}`;
+    }
+
+    function updateDisplay() {
+      document.getElementById('totalValue').textContent = formatBigInt(totalCombinations);
+      document.getElementById('totalScientific').textContent = toScientific(totalCombinations);
+
+      // Update formula
+      const checksumChoices = CHECKSUM_MAP[totalWords];
+      const entropyBits = ENTROPY_BITS[totalWords];
+      const normalWords = totalWords - 1;
+
+      if (currentWord === 0) {
+        document.getElementById('formula').textContent = `2048 choices per word (${checksumChoices} for checksum)`;
+      } else if (currentWord < normalWords) {
+        document.getElementById('formula').textContent = `2048^${currentWord}`;
+      } else if (currentWord === normalWords) {
+        document.getElementById('formula').textContent = `2048^${normalWords}`;
+      } else {
+        document.getElementById('formula').textContent = `2048^${normalWords} × ${checksumChoices} = 2^${entropyBits}`;
+      }
+
+      // Update comparisons
+      const totalFloat = Number(totalCombinations);
+      comparisons.forEach((c, i) => {
+        const bar = document.getElementById(`bar-${i}`);
+        const comparison = document.getElementById(`comparison-${i}`);
+        const ratio = Math.min(100, (Math.log10(totalFloat) / Math.log10(c.value)) * 100);
+        bar.style.width = `${ratio}%`;
+        comparison.classList.toggle('exceeded', totalFloat >= c.value);
+      });
+
+      // Update time
+      const guessesPerSecond = 1e12; // 1 trillion
+      const secondsNeeded = totalFloat / guessesPerSecond;
+      const timeStr = formatTime(secondsNeeded);
+      document.getElementById('timeValue').textContent = timeStr;
+
+      // Update buttons
+      const btn = document.getElementById('spinBtn');
+      const skipBtn = document.getElementById('skipBtn');
+      if (currentWord >= totalWords) {
+        btn.disabled = true;
+        btn.textContent = 'Complete!';
+        skipBtn.disabled = true;
+      } else {
+        btn.disabled = false;
+        skipBtn.disabled = false;
+        const isLastWord = currentWord === totalWords - 1;
+        btn.textContent = isLastWord ? 'Pick Checksum' : `Pick Word #${currentWord + 1}`;
+      }
+    }
+
+    function formatTime(seconds) {
+      if (seconds < 1) return 'instant';
+      if (seconds < 60) return `${seconds.toFixed(0)} seconds`;
+      if (seconds < 3600) return `${(seconds / 60).toFixed(0)} minutes`;
+      if (seconds < 86400) return `${(seconds / 3600).toFixed(0)} hours`;
+      if (seconds < 31536000) return `${(seconds / 86400).toFixed(0)} days`;
+
+      const years = seconds / 31536000;
+      if (years < 1e6) return `${years.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} years`;
+      if (years < 1e9) return `${(years / 1e6).toFixed(1)} million years`;
+      if (years < 1e12) return `${(years / 1e9).toFixed(1)} billion years`;
+      if (years < 1e15) return `${(years / 1e12).toFixed(1)} trillion years`;
+
+      const exp = Math.floor(Math.log10(years));
+      const mantissa = (years / Math.pow(10, exp)).toFixed(1);
+      return `${mantissa} × 10^${exp} years`;
+    }
+
+    function spinNext() {
+      if (isSpinning || currentWord >= totalWords) return;
+
+      isSpinning = true;
+      const slot = document.getElementById(`slot-${currentWord}`);
+      slot.className = 'slot active spinning';
+      const wordEl = slot.querySelector('.slot-word');
+
+      let spins = 0;
+      const maxSpins = 20 + Math.random() * 10;
+
+      spinInterval = setInterval(() => {
+        wordEl.textContent = getRandomWord();
+        spins++;
+
+        if (spins >= maxSpins) {
+          clearInterval(spinInterval);
+          finishSpin(slot, wordEl);
+        }
+      }, 80);
+    }
+
+    function finishSpin(slot, wordEl) {
+      const finalWord = getRandomWord();
+      wordEl.textContent = finalWord;
+      const isChecksum = currentWord === totalWords - 1;
+      slot.className = 'slot filled' + (isChecksum ? ' checksum' : '');
+
+      const choicesEl = slot.querySelector('.slot-choices');
+      const choices = isChecksum ? CHECKSUM_MAP[totalWords] : BIP39_WORDS;
+      choicesEl.textContent = `1 of ${choices}`;
+
+      totalCombinations = totalCombinations * BigInt(choices);
+      currentWord++;
+      isSpinning = false;
+
+      updateDisplay();
+    }
+
+    function skipToEnd() {
+      if (isSpinning) return;
+
+      while (currentWord < totalWords) {
+        const slot = document.getElementById(`slot-${currentWord}`);
+        const wordEl = slot.querySelector('.slot-word');
+        const choicesEl = slot.querySelector('.slot-choices');
+        const isChecksum = currentWord === totalWords - 1;
+
+        wordEl.textContent = getRandomWord();
+        slot.className = 'slot filled' + (isChecksum ? ' checksum' : '');
+
+        const choices = isChecksum ? CHECKSUM_MAP[totalWords] : BIP39_WORDS;
+        choicesEl.textContent = `1 of ${choices}`;
+        totalCombinations = totalCombinations * BigInt(choices);
+        currentWord++;
+      }
+
+      updateDisplay();
+    }
+
+    function reset() {
+      if (spinInterval) clearInterval(spinInterval);
+      currentWord = 0;
+      isSpinning = false;
+      totalCombinations = 1n;
+      init();
+    }
+
+    // Initialize
+    init();
+  </script>
+</body>
+</html>
