@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonding Curve Explorer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e4e4e4;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00d9ff;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 30px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    @media (max-width: 800px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .chart-card {
+      display: flex;
+      flex-direction: column;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    label {
+      font-size: 14px;
+      color: #aaa;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #333;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #00d9ff;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+    }
+    select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #2a2a3e;
+      color: #e4e4e4;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .value-display {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00d9ff;
+    }
+    canvas {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 70vh;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: rgba(0, 217, 255, 0.1);
+      border-radius: 8px;
+    }
+    .stat-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00d9ff;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: #888;
+    }
+    .formula {
+      text-align: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      color: #ff9f43;
+      font-size: 18px;
+    }
+    .marker-info {
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(255, 159, 67, 0.1);
+      border-radius: 8px;
+      border-left: 3px solid #ff9f43;
+    }
+    .buy-sell {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .buy-sell button {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.1s;
+    }
+    .buy-sell button:hover {
+      transform: scale(1.02);
+    }
+    .buy-sell button:active {
+      transform: scale(0.98);
+    }
+    .buy-sell button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-sell {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+      color: white;
+    }
+    .btn-buy {
+      background: linear-gradient(135deg, #51cf66, #40c057);
+      color: white;
+    }
+    .stat.reserve {
+      background: rgba(255, 159, 67, 0.15);
+    }
+    .stat.reserve .stat-value {
+      color: #ff9f43;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bonding Curve Explorer</h1>
+    <p class="subtitle">See how token price changes based on supply</p>
+
+    <div class="main-layout">
+      <div class="sidebar">
+        <div class="card">
+          <div class="formula" id="formula">Price = Supply²</div>
+        </div>
+
+        <div class="card">
+          <div class="controls">
+            <div class="control-group">
+              <label>Curve Type</label>
+              <select id="curveType">
+                <option value="linear">Linear (x)</option>
+                <option value="quadratic">Quadratic (x²)</option>
+                <option value="cubic">Cubic (x³)</option>
+                <option value="sqrt">Square Root (√x)</option>
+                <option value="exponential">Exponential (eˣ)</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label>Current Supply: <span class="value-display" id="supplyValue">100</span></label>
+              <input type="range" id="supply" min="1" max="200" value="100">
+              <div class="buy-sell">
+                <button class="btn-sell" id="sellBtn" onclick="sell()">Sell 10</button>
+                <button class="btn-buy" id="buyBtn" onclick="buy()">Buy 10</button>
+              </div>
+            </div>
+            <div class="control-group">
+              <label>Curve Steepness: <span class="value-display" id="steepnessValue">1.0</span></label>
+              <input type="range" id="steepness" min="0.1" max="3" step="0.1" value="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">Current Price</div>
+              <div class="stat-value" id="currentPrice">—</div>
+            </div>
+            <div class="stat reserve">
+              <div class="stat-label">Total Reserve</div>
+              <div class="stat-value" id="totalReserve">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Market Cap</div>
+              <div class="stat-value" id="marketCap">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Next Token Cost</div>
+              <div class="stat-value" id="nextTokenCost">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <canvas id="chart"></canvas>
+        <div class="marker-info">
+          <strong>Current Position:</strong> At supply of <span id="markerSupply">100</span> tokens,
+          the price is <span id="markerPrice" style="color: #00d9ff; font-weight: bold;">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+
+    // High DPI support
+    function setupCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
+
+    const curveType = document.getElementById('curveType');
+    const supplySlider = document.getElementById('supply');
+    const steepnessSlider = document.getElementById('steepness');
+    const supplyValue = document.getElementById('supplyValue');
+    const steepnessValue = document.getElementById('steepnessValue');
+
+    const MAX_SUPPLY = 200;
+
+    function buy() {
+      const newValue = Math.min(MAX_SUPPLY, parseInt(supplySlider.value) + 10);
+      supplySlider.value = newValue;
+      supplyValue.textContent = newValue;
+      draw();
+    }
+
+    function sell() {
+      const newValue = Math.max(1, parseInt(supplySlider.value) - 10);
+      supplySlider.value = newValue;
+      supplyValue.textContent = newValue;
+      draw();
+    }
+
+    function calculateReserve(supply, type, steepness) {
+      let reserve = 0;
+      for (let i = 1; i <= supply; i++) {
+        reserve += calculatePrice(i, type, steepness);
+      }
+      return reserve;
+    }
+
+    function calculatePrice(supply, type, steepness) {
+      switch(type) {
+        case 'linear':
+          return steepness * supply;
+        case 'quadratic':
+          return steepness * Math.pow(supply, 2);
+        case 'cubic':
+          return steepness * Math.pow(supply, 3);
+        case 'sqrt':
+          return steepness * Math.sqrt(supply);
+        case 'exponential':
+          return steepness * (Math.exp(supply / 50) - 1);
+        default:
+          return steepness * supply;
+      }
+    }
+
+    function formatNumber(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      if (n >= 10) return n.toFixed(0);
+      if (n >= 1) return n.toFixed(1);
+      return n.toFixed(2);
+    }
+
+    function getMaxPrice(type) {
+      // Max price at MAX_SUPPLY with steepness=1
+      switch(type) {
+        case 'linear':
+          return MAX_SUPPLY; // 200
+        case 'quadratic':
+          return Math.pow(MAX_SUPPLY, 2); // 40000
+        case 'cubic':
+          return Math.pow(MAX_SUPPLY, 3); // 8000000
+        case 'sqrt':
+          return Math.sqrt(MAX_SUPPLY); // ~14.14
+        case 'exponential':
+          return Math.exp(MAX_SUPPLY / 50) - 1; // ~53.6
+        default:
+          return MAX_SUPPLY;
+      }
+    }
+
+    function getFormula(type, steepness) {
+      const k = steepness.toFixed(1);
+      switch(type) {
+        case 'linear':
+          return `Price = ${k} × Supply`;
+        case 'quadratic':
+          return `Price = ${k} × Supply²`;
+        case 'cubic':
+          return `Price = ${k} × Supply³`;
+        case 'sqrt':
+          return `Price = ${k} × √Supply`;
+        case 'exponential':
+          return `Price = ${k} × (e^(Supply/50) − 1)`;
+        default:
+          return 'Price = f(Supply)';
+      }
+    }
+
+    function draw() {
+      setupCanvas();
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const padding = 50;
+
+      const type = curveType.value;
+      const supply = parseInt(supplySlider.value);
+      const steepness = parseFloat(steepnessSlider.value);
+
+      // Clear canvas
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Y-axis scale based on curve type (reaches top at steepness=1)
+      const maxPrice = getMaxPrice(type) * 1.1; // 10% padding
+
+      // Draw grid lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const y = padding + (height - 2 * padding) * (1 - i / 5);
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= 5; i++) {
+        const x = padding + (width - 2 * padding) * i / 5;
+        ctx.beginPath();
+        ctx.moveTo(x, padding);
+        ctx.lineTo(x, height - padding);
+        ctx.stroke();
+      }
+
+      // Clip region for the curve (so it doesn't overflow)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(padding, padding, width - 2 * padding, height - 2 * padding);
+      ctx.clip();
+
+      // Draw filled area under full curve (faded)
+      ctx.beginPath();
+      ctx.moveTo(padding, height - padding);
+      for (let i = 1; i <= MAX_SUPPLY; i++) {
+        const x = padding + (width - 2 * padding) * (i / MAX_SUPPLY);
+        const price = calculatePrice(i, type, steepness);
+        const y = height - padding - (height - 2 * padding) * (price / maxPrice);
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(width - padding, height - padding);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(0, 217, 255, 0.08)';
+      ctx.fill();
+
+      // Draw reserve area (up to current supply)
+      ctx.beginPath();
+      ctx.moveTo(padding, height - padding);
+      for (let i = 1; i <= supply; i++) {
+        const x = padding + (width - 2 * padding) * (i / MAX_SUPPLY);
+        const price = calculatePrice(i, type, steepness);
+        const y = height - padding - (height - 2 * padding) * (price / maxPrice);
+        ctx.lineTo(x, y);
+      }
+      const endX = padding + (width - 2 * padding) * (supply / MAX_SUPPLY);
+      ctx.lineTo(endX, height - padding);
+      ctx.closePath();
+      const reserveGradient = ctx.createLinearGradient(0, padding, 0, height - padding);
+      reserveGradient.addColorStop(0, 'rgba(255, 159, 67, 0.4)');
+      reserveGradient.addColorStop(1, 'rgba(255, 159, 67, 0.1)');
+      ctx.fillStyle = reserveGradient;
+      ctx.fill();
+
+      // Draw curve
+      ctx.beginPath();
+      ctx.strokeStyle = '#00d9ff';
+      ctx.lineWidth = 3;
+      for (let i = 1; i <= MAX_SUPPLY; i++) {
+        const x = padding + (width - 2 * padding) * (i / MAX_SUPPLY);
+        const price = calculatePrice(i, type, steepness);
+        const y = height - padding - (height - 2 * padding) * (price / maxPrice);
+        if (i === 1) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Draw current position marker
+      const currentPrice = calculatePrice(supply, type, steepness);
+      const markerX = padding + (width - 2 * padding) * (supply / MAX_SUPPLY);
+      const markerY = height - padding - (height - 2 * padding) * (currentPrice / maxPrice);
+
+      // Vertical line to marker
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255, 159, 67, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.moveTo(markerX, height - padding);
+      ctx.lineTo(markerX, markerY);
+      ctx.stroke();
+
+      // Horizontal line to marker
+      ctx.beginPath();
+      ctx.moveTo(padding, markerY);
+      ctx.lineTo(markerX, markerY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Marker dot
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff9f43';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Restore from clipping
+      ctx.restore();
+
+      // Draw axis labels (outside clipping region)
+      for (let i = 0; i <= 5; i++) {
+        const y = padding + (height - 2 * padding) * (1 - i / 5);
+        ctx.fillStyle = '#666';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(formatNumber(maxPrice * i / 5), padding - 10, y + 4);
+      }
+      for (let i = 0; i <= 5; i++) {
+        const x = padding + (width - 2 * padding) * i / 5;
+        ctx.fillStyle = '#666';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText((MAX_SUPPLY / 5 * i).toFixed(0), x, height - padding + 20);
+      }
+
+      // Axis titles
+      ctx.fillStyle = '#888';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Supply', width / 2, height - 10);
+      ctx.save();
+      ctx.translate(15, height / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Price', 0, 0);
+      ctx.restore();
+
+      // Update stats
+      const nextPrice = calculatePrice(supply + 1, type, steepness);
+      const totalReserve = calculateReserve(supply, type, steepness);
+      document.getElementById('currentPrice').textContent = formatNumber(currentPrice);
+      document.getElementById('totalReserve').textContent = formatNumber(totalReserve);
+      document.getElementById('marketCap').textContent = formatNumber(currentPrice * supply);
+      document.getElementById('nextTokenCost').textContent = formatNumber(nextPrice);
+      document.getElementById('markerSupply').textContent = supply;
+      document.getElementById('markerPrice').textContent = formatNumber(currentPrice);
+      document.getElementById('formula').textContent = getFormula(type, steepness);
+
+      // Update button states
+      document.getElementById('sellBtn').disabled = supply <= 10;
+      document.getElementById('buyBtn').disabled = supply >= MAX_SUPPLY - 9;
+    }
+
+    // Event listeners
+    curveType.addEventListener('change', draw);
+    supplySlider.addEventListener('input', () => {
+      supplyValue.textContent = supplySlider.value;
+      draw();
+    });
+    steepnessSlider.addEventListener('input', () => {
+      steepnessValue.textContent = parseFloat(steepnessSlider.value).toFixed(1);
+      draw();
+    });
+
+    // Handle resize
+    window.addEventListener('resize', draw);
+
+    // Initial draw
+    draw();
+  </script>
+</body>
+</html>

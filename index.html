@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeFi Visualized</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e4e4e4;
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #00d9ff;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #888;
+      margin-bottom: 40px;
+      font-size: 18px;
+    }
+    .examples {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .example {
+      display: block;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px 24px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .example:hover {
+      transform: translateY(-2px);
+      border-color: #00d9ff;
+    }
+    .example-title {
+      color: #00d9ff;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .example-desc {
+      color: #aaa;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .coming-soon {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .coming-soon .example-title::after {
+      content: " (coming soon)";
+      font-size: 12px;
+      color: #666;
+      font-weight: normal;
+    }
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+    footer a {
+      color: #00d9ff;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DeFi Visualized</h1>
+    <p class="subtitle">Interactive explorations of DeFi concepts</p>
+
+    <div class="examples">
+      <a href="bonding-curve.html" class="example">
+        <div class="example-title">Bonding Curve</div>
+        <div class="example-desc">See how token price changes based on supply. Explore different curve types, simulate buys and sells, and understand how reserves accumulate.</div>
+      </a>
+
+      <div class="example coming-soon">
+        <div class="example-title">AMM Price Impact</div>
+        <div class="example-desc">Visualize the constant product formula (x × y = k) and see how trade size affects slippage.</div>
+      </div>
+
+      <div class="example coming-soon">
+        <div class="example-title">Impermanent Loss</div>
+        <div class="example-desc">Understand the hidden cost of providing liquidity and when it actually matters.</div>
+      </div>
+
+      <div class="example coming-soon">
+        <div class="example-title">Liquidation Threshold</div>
+        <div class="example-desc">Watch a position's health factor change as prices move toward liquidation.</div>
+      </div>
+    </div>
+
+    <footer>
+      <a href="https://github.com/user/defi-visualized">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>
