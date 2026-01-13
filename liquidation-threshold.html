@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquidation Threshold - DeFi Visualized</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e4e4e4;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00d9ff;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 30px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-title {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .control-group {
+      margin-bottom: 20px;
+    }
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #333;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #00d9ff;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+    }
+    .value-display {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00d9ff;
+    }
+    .position-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .position-item {
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      text-align: center;
+    }
+    .position-label {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .position-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00d9ff;
+    }
+    .position-value.debt {
+      color: #ff9f43;
+    }
+    .health-container {
+      padding: 20px;
+      text-align: center;
+    }
+    .health-label {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    .health-value {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      transition: color 0.3s;
+    }
+    .health-value.safe {
+      color: #51cf66;
+    }
+    .health-value.warning {
+      color: #fcc419;
+    }
+    .health-value.danger {
+      color: #ff6b6b;
+    }
+    .health-value.liquidated {
+      color: #ff6b6b;
+      animation: pulse 0.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .health-bar-container {
+      background: #222;
+      border-radius: 8px;
+      height: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .health-bar {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.3s, background 0.3s;
+    }
+    .health-bar.safe {
+      background: linear-gradient(90deg, #51cf66, #40c057);
+    }
+    .health-bar.warning {
+      background: linear-gradient(90deg, #fcc419, #fab005);
+    }
+    .health-bar.danger {
+      background: linear-gradient(90deg, #ff6b6b, #fa5252);
+    }
+    .threshold-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: #fff;
+      opacity: 0.8;
+    }
+    .threshold-label {
+      position: absolute;
+      top: -20px;
+      font-size: 10px;
+      color: #888;
+      transform: translateX(-50%);
+    }
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: #888;
+    }
+    .stat-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e4e4e4;
+    }
+    .stat-value.liquidation-price {
+      color: #ff6b6b;
+    }
+    .liquidation-warning {
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(255, 107, 107, 0.2);
+      border: 1px solid rgba(255, 107, 107, 0.4);
+      border-radius: 12px;
+      text-align: center;
+      display: none;
+    }
+    .liquidation-warning.show {
+      display: block;
+    }
+    .liquidation-warning h3 {
+      color: #ff6b6b;
+      margin: 0 0 8px 0;
+      font-size: 18px;
+    }
+    .liquidation-warning p {
+      color: #888;
+      margin: 0;
+      font-size: 13px;
+    }
+    canvas {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .chart-card {
+      display: flex;
+      flex-direction: column;
+    }
+    .legend {
+      display: flex;
+      gap: 20px;
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-line {
+      width: 24px;
+      height: 3px;
+      border-radius: 2px;
+    }
+    .protocol-params {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .param {
+      text-align: center;
+    }
+    .param-label {
+      font-size: 10px;
+      color: #666;
+    }
+    .param-value {
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Liquidation Threshold</h1>
+    <p class="subtitle">See how price changes push positions toward liquidation</p>
+
+    <div class="main-layout">
+      <div class="sidebar">
+        <div class="card">
+          <div class="protocol-params">
+            <div class="param">
+              <div class="param-label">Liquidation Threshold</div>
+              <div class="param-value">80% LTV</div>
+            </div>
+            <div class="param">
+              <div class="param-label">Liquidation Penalty</div>
+              <div class="param-value">5%</div>
+            </div>
+          </div>
+
+          <div class="position-summary">
+            <div class="position-item">
+              <div class="position-label">Collateral Value</div>
+              <div class="position-value" id="collateralValue">$2,000</div>
+            </div>
+            <div class="position-item">
+              <div class="position-label">Debt Value</div>
+              <div class="position-value debt" id="debtValue">$1,000</div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label>Collateral: <span class="value-display"><span id="collateralAmount">2</span> ETH</span></label>
+            <input type="range" id="collateral" min="0.5" max="10" value="2" step="0.1">
+          </div>
+
+          <div class="control-group">
+            <label>Debt: <span class="value-display">$<span id="debtAmount">1,000</span></span></label>
+            <input type="range" id="debt" min="100" max="5000" value="1000" step="100">
+          </div>
+
+          <div class="control-group">
+            <label>ETH Price: <span class="value-display">$<span id="priceDisplay">1,000</span></span></label>
+            <input type="range" id="price" min="100" max="3000" value="1000" step="10">
+          </div>
+        </div>
+
+        <div class="card health-container">
+          <div class="health-label">Health Factor</div>
+          <div class="health-value safe" id="healthFactor">2.00</div>
+          <div class="health-bar-container">
+            <div class="threshold-marker" style="left: 50%;">
+              <div class="threshold-label">Liquidation</div>
+            </div>
+            <div class="health-bar safe" id="healthBar" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">Loan-to-Value (LTV)</div>
+              <div class="stat-value" id="ltv">50.0%</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Liquidation Price</div>
+              <div class="stat-value liquidation-price" id="liquidationPrice">$625</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Buffer to Liquidation</div>
+              <div class="stat-value" id="buffer">$375 (37.5%)</div>
+            </div>
+          </div>
+
+          <div class="liquidation-warning" id="liquidationWarning">
+            <h3>LIQUIDATED!</h3>
+            <p>Your position has been liquidated. Collateral was sold to repay debt, minus a 5% penalty.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <canvas id="chart"></canvas>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-line" style="background: #00d9ff;"></div>
+            <span>Collateral Value</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: #ff9f43;"></div>
+            <span>Debt (constant)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: #ff6b6b;"></div>
+            <span>Liquidation Zone (LTV > 80%)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-line" style="background: #51cf66; height: 2px; border-style: dashed;"></div>
+            <span>Current Price</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+
+    const collateralSlider = document.getElementById('collateral');
+    const debtSlider = document.getElementById('debt');
+    const priceSlider = document.getElementById('price');
+
+    const LIQUIDATION_THRESHOLD = 0.80; // 80% LTV
+
+    function setupCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
+
+    function formatCurrency(n) {
+      if (n >= 10000) return '$' + (n / 1000).toFixed(1) + 'K';
+      return '$' + n.toFixed(0);
+    }
+
+    function calculateLiquidationPrice(collateralAmount, debt) {
+      // LTV = debt / collateralValue
+      // At liquidation: LIQUIDATION_THRESHOLD = debt / (collateralAmount * price)
+      // price = debt / (collateralAmount * LIQUIDATION_THRESHOLD)
+      return debt / (collateralAmount * LIQUIDATION_THRESHOLD);
+    }
+
+    function draw() {
+      setupCanvas();
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const padding = 50;
+
+      const collateralAmount = parseFloat(collateralSlider.value);
+      const debt = parseFloat(debtSlider.value);
+      const price = parseFloat(priceSlider.value);
+
+      const collateralValue = collateralAmount * price;
+      const ltv = debt / collateralValue;
+      const healthFactor = (collateralValue * LIQUIDATION_THRESHOLD) / debt;
+      const liquidationPrice = calculateLiquidationPrice(collateralAmount, debt);
+      const buffer = price - liquidationPrice;
+      const bufferPercent = (buffer / price) * 100;
+
+      const isLiquidated = healthFactor < 1;
+
+      // Update UI
+      document.getElementById('collateralAmount').textContent = collateralAmount.toFixed(1);
+      document.getElementById('debtAmount').textContent = debt.toLocaleString();
+      document.getElementById('priceDisplay').textContent = price.toLocaleString();
+      document.getElementById('collateralValue').textContent = formatCurrency(collateralValue);
+      document.getElementById('debtValue').textContent = formatCurrency(debt);
+      document.getElementById('ltv').textContent = (ltv * 100).toFixed(1) + '%';
+      document.getElementById('liquidationPrice').textContent = formatCurrency(liquidationPrice);
+
+      if (buffer > 0) {
+        document.getElementById('buffer').textContent = `${formatCurrency(buffer)} (${bufferPercent.toFixed(1)}%)`;
+      } else {
+        document.getElementById('buffer').textContent = 'LIQUIDATED';
+      }
+
+      // Health factor display
+      const healthEl = document.getElementById('healthFactor');
+      const healthBarEl = document.getElementById('healthBar');
+
+      healthEl.textContent = isLiquidated ? 'LIQUIDATED' : healthFactor.toFixed(2);
+      healthEl.className = 'health-value';
+      healthBarEl.className = 'health-bar';
+
+      if (isLiquidated) {
+        healthEl.classList.add('liquidated');
+        healthBarEl.classList.add('danger');
+        healthBarEl.style.width = '100%';
+      } else if (healthFactor < 1.2) {
+        healthEl.classList.add('danger');
+        healthBarEl.classList.add('danger');
+        healthBarEl.style.width = Math.min(100, (healthFactor / 2) * 100) + '%';
+      } else if (healthFactor < 1.5) {
+        healthEl.classList.add('warning');
+        healthBarEl.classList.add('warning');
+        healthBarEl.style.width = Math.min(100, (healthFactor / 2) * 100) + '%';
+      } else {
+        healthEl.classList.add('safe');
+        healthBarEl.classList.add('safe');
+        healthBarEl.style.width = Math.min(100, (healthFactor / 2) * 100) + '%';
+      }
+
+      document.getElementById('liquidationWarning').classList.toggle('show', isLiquidated);
+
+      // Clear canvas
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Price range for chart
+      const minPrice = 100;
+      const maxPrice = 3000;
+
+      // Find max value for y-axis
+      const maxCollateralValue = collateralAmount * maxPrice;
+      const maxY = Math.max(maxCollateralValue, debt * 1.5) * 1.1;
+
+      // Draw grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const y = padding + (height - 2 * padding) * (1 - i / 5);
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+
+        const x = padding + (width - 2 * padding) * i / 5;
+        ctx.beginPath();
+        ctx.moveTo(x, padding);
+        ctx.lineTo(x, height - padding);
+        ctx.stroke();
+      }
+
+      const priceToX = (p) => padding + (width - 2 * padding) * ((p - minPrice) / (maxPrice - minPrice));
+      const valueToY = (v) => height - padding - (height - 2 * padding) * (v / maxY);
+
+      // Draw liquidation zone (where LTV > 80%)
+      const liqPriceX = priceToX(Math.max(minPrice, liquidationPrice));
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.15)';
+      ctx.fillRect(padding, padding, liqPriceX - padding, height - 2 * padding);
+
+      // Draw collateral value line
+      ctx.beginPath();
+      ctx.strokeStyle = '#00d9ff';
+      ctx.lineWidth = 3;
+      for (let p = minPrice; p <= maxPrice; p += 20) {
+        const cv = collateralAmount * p;
+        const x = priceToX(p);
+        const y = valueToY(cv);
+        if (p === minPrice) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Draw debt line (constant)
+      ctx.beginPath();
+      ctx.strokeStyle = '#ff9f43';
+      ctx.lineWidth = 3;
+      ctx.moveTo(padding, valueToY(debt));
+      ctx.lineTo(width - padding, valueToY(debt));
+      ctx.stroke();
+
+      // Draw liquidation threshold line (80% of collateral value)
+      ctx.beginPath();
+      ctx.strokeStyle = '#ff6b6b';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      for (let p = minPrice; p <= maxPrice; p += 20) {
+        const liqValue = collateralAmount * p * LIQUIDATION_THRESHOLD;
+        const x = priceToX(p);
+        const y = valueToY(liqValue);
+        if (p === minPrice) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw current price line
+      ctx.beginPath();
+      ctx.strokeStyle = '#51cf66';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      const currentX = priceToX(price);
+      ctx.moveTo(currentX, padding);
+      ctx.lineTo(currentX, height - padding);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Mark liquidation price on x-axis
+      if (liquidationPrice >= minPrice && liquidationPrice <= maxPrice) {
+        const liqX = priceToX(liquidationPrice);
+        ctx.beginPath();
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(liqX, padding);
+        ctx.lineTo(liqX, height - padding);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#ff6b6b';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('▲', liqX, height - padding + 35);
+        ctx.fillText('liq: ' + formatCurrency(liquidationPrice), liqX, height - padding + 48);
+      }
+
+      // Draw current position dot
+      const currentY = valueToY(collateralValue);
+      ctx.beginPath();
+      ctx.arc(currentX, currentY, 10, 0, Math.PI * 2);
+      ctx.fillStyle = isLiquidated ? '#ff6b6b' : '#00d9ff';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      for (let i = 0; i <= 5; i++) {
+        const p = minPrice + (maxPrice - minPrice) * i / 5;
+        const x = priceToX(p);
+        ctx.fillText('$' + p.toFixed(0), x, height - padding + 20);
+
+        const val = maxY * i / 5;
+        const y = height - padding - (height - 2 * padding) * i / 5;
+        ctx.textAlign = 'right';
+        ctx.fillText(formatCurrency(val), padding - 10, y + 4);
+        ctx.textAlign = 'center';
+      }
+
+      // Axis titles
+      ctx.fillStyle = '#888';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('ETH Price', width / 2, height - 10);
+      ctx.save();
+      ctx.translate(15, height / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Value ($)', 0, 0);
+      ctx.restore();
+
+      // Label the lines
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#00d9ff';
+      ctx.textAlign = 'left';
+      ctx.fillText('Collateral', width - padding + 5, valueToY(collateralAmount * maxPrice) + 4);
+
+      ctx.fillStyle = '#ff9f43';
+      ctx.fillText('Debt', width - padding + 5, valueToY(debt) + 4);
+    }
+
+    // Event listeners
+    collateralSlider.addEventListener('input', draw);
+    debtSlider.addEventListener('input', draw);
+    priceSlider.addEventListener('input', draw);
+    window.addEventListener('resize', draw);
+
+    // Initial draw
+    draw();
+  </script>
+</body>
+</html>

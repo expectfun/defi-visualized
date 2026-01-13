@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concentrated Liquidity - DeFi Visualized</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e4e4e4;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00d9ff;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 30px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .control-group {
+      margin-bottom: 20px;
+    }
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #333;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #00d9ff;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+    }
+    input[type="range"].lower::-webkit-slider-thumb {
+      background: #ff9f43;
+    }
+    input[type="range"].upper::-webkit-slider-thumb {
+      background: #ff9f43;
+    }
+    .value-display {
+      font-size: 18px;
+      font-weight: bold;
+      color: #00d9ff;
+    }
+    .value-display.range {
+      color: #ff9f43;
+    }
+    .range-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: rgba(255, 159, 67, 0.1);
+      border: 1px solid rgba(255, 159, 67, 0.3);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .range-bound {
+      text-align: center;
+    }
+    .range-bound-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .range-bound-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #ff9f43;
+    }
+    .range-arrow {
+      color: #666;
+      font-size: 24px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-badge.in-range {
+      background: rgba(81, 207, 102, 0.2);
+      color: #51cf66;
+    }
+    .status-badge.out-of-range {
+      background: rgba(255, 107, 107, 0.2);
+      color: #ff6b6b;
+    }
+    .position-composition {
+      margin-top: 16px;
+    }
+    .composition-bar {
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .composition-eth {
+      background: linear-gradient(90deg, #00d9ff, #00b8d9);
+      transition: width 0.3s;
+    }
+    .composition-usd {
+      background: linear-gradient(90deg, #51cf66, #40c057);
+      transition: width 0.3s;
+    }
+    .composition-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .composition-labels span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot.eth {
+      background: #00d9ff;
+    }
+    .dot.usd {
+      background: #51cf66;
+    }
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: #888;
+    }
+    .stat-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e4e4e4;
+    }
+    .stat-value.highlight {
+      color: #00d9ff;
+    }
+    .stat-value.efficiency {
+      color: #51cf66;
+    }
+    .efficiency-boost {
+      text-align: center;
+      padding: 20px;
+      background: rgba(81, 207, 102, 0.1);
+      border: 1px solid rgba(81, 207, 102, 0.3);
+      border-radius: 12px;
+    }
+    .efficiency-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .efficiency-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #51cf66;
+    }
+    .efficiency-note {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+    }
+    canvas {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+    .chart-card {
+      display: flex;
+      flex-direction: column;
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Concentrated Liquidity</h1>
+    <p class="subtitle">See how narrowing your range increases capital efficiency</p>
+
+    <div class="main-layout">
+      <div class="sidebar">
+        <div class="card">
+          <div class="range-display">
+            <div class="range-bound">
+              <div class="range-bound-label">Lower Bound</div>
+              <div class="range-bound-value" id="lowerDisplay">$800</div>
+            </div>
+            <div class="range-arrow">→</div>
+            <div class="range-bound">
+              <div class="range-bound-label">Upper Bound</div>
+              <div class="range-bound-value" id="upperDisplay">$1,200</div>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label>Lower Price: <span class="value-display range">$<span id="lowerValue">800</span></span></label>
+            <input type="range" class="lower" id="lowerPrice" min="100" max="1900" value="800" step="50">
+          </div>
+
+          <div class="control-group">
+            <label>Upper Price: <span class="value-display range">$<span id="upperValue">1,200</span></span></label>
+            <input type="range" class="upper" id="upperPrice" min="200" max="2000" value="1200" step="50">
+          </div>
+
+          <div class="control-group">
+            <label>Current ETH Price: <span class="value-display">$<span id="currentValue">1,000</span></span></label>
+            <input type="range" id="currentPrice" min="100" max="2000" value="1000" step="10">
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="text-align: center; margin-bottom: 12px;">
+            <span class="status-badge in-range" id="statusBadge">In Range</span>
+          </div>
+
+          <div class="position-composition">
+            <div class="composition-bar">
+              <div class="composition-eth" id="ethBar" style="width: 50%;"></div>
+              <div class="composition-usd" id="usdBar" style="width: 50%;"></div>
+            </div>
+            <div class="composition-labels">
+              <span><div class="dot eth"></div> <span id="ethPercent">50%</span> ETH</span>
+              <span><span id="usdPercent">50%</span> USDC <div class="dot usd"></div></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="efficiency-boost">
+            <div class="efficiency-label">Capital Efficiency vs Full Range</div>
+            <div class="efficiency-value" id="efficiencyValue">4.5x</div>
+            <div class="efficiency-note">Same liquidity depth with <span id="capitalNeeded">22%</span> of the capital</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label">Range Width</div>
+              <div class="stat-value" id="rangeWidth">$400 (40%)</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Distance to Lower</div>
+              <div class="stat-value" id="distLower">$200 (20%)</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Distance to Upper</div>
+              <div class="stat-value" id="distUpper">$200 (20%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <canvas id="chart"></canvas>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-box" style="background: rgba(255, 159, 67, 0.4);"></div>
+            <span>Your Liquidity Range</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box" style="background: rgba(0, 217, 255, 0.2);"></div>
+            <span>Full Range (v2 style)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box" style="background: #51cf66; width: 16px; height: 3px;"></div>
+            <span>Current Price</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+
+    const lowerSlider = document.getElementById('lowerPrice');
+    const upperSlider = document.getElementById('upperPrice');
+    const currentSlider = document.getElementById('currentPrice');
+
+    function setupCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+    }
+
+    function calculateEfficiency(priceLower, priceUpper) {
+      // Efficiency = sqrt(priceUpper) / (sqrt(priceUpper) - sqrt(priceLower))
+      const sqrtUpper = Math.sqrt(priceUpper);
+      const sqrtLower = Math.sqrt(priceLower);
+      return sqrtUpper / (sqrtUpper - sqrtLower);
+    }
+
+    function calculateComposition(currentPrice, priceLower, priceUpper) {
+      // When price is at lower bound: 100% ETH
+      // When price is at upper bound: 100% USDC
+      // Linear interpolation in sqrt price space
+
+      if (currentPrice <= priceLower) {
+        return { ethPercent: 100, usdPercent: 0 };
+      }
+      if (currentPrice >= priceUpper) {
+        return { ethPercent: 0, usdPercent: 100 };
+      }
+
+      const sqrtCurrent = Math.sqrt(currentPrice);
+      const sqrtLower = Math.sqrt(priceLower);
+      const sqrtUpper = Math.sqrt(priceUpper);
+
+      // Proportion through the range (in sqrt space)
+      const proportion = (sqrtCurrent - sqrtLower) / (sqrtUpper - sqrtLower);
+
+      // ETH decreases as price increases
+      const ethPercent = (1 - proportion) * 100;
+      const usdPercent = proportion * 100;
+
+      return { ethPercent, usdPercent };
+    }
+
+    function draw() {
+      setupCanvas();
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const padding = 50;
+
+      let lowerPrice = parseFloat(lowerSlider.value);
+      let upperPrice = parseFloat(upperSlider.value);
+      const currentPrice = parseFloat(currentSlider.value);
+
+      // Ensure lower < upper
+      if (lowerPrice >= upperPrice) {
+        if (this === lowerSlider) {
+          upperPrice = lowerPrice + 50;
+          upperSlider.value = upperPrice;
+        } else {
+          lowerPrice = upperPrice - 50;
+          lowerSlider.value = lowerPrice;
+        }
+      }
+
+      const inRange = currentPrice >= lowerPrice && currentPrice <= upperPrice;
+      const efficiency = calculateEfficiency(lowerPrice, upperPrice);
+      const composition = calculateComposition(currentPrice, lowerPrice, upperPrice);
+      const rangeWidth = upperPrice - lowerPrice;
+      const rangeWidthPercent = (rangeWidth / currentPrice) * 100;
+
+      // Update UI
+      document.getElementById('lowerValue').textContent = lowerPrice.toLocaleString();
+      document.getElementById('upperValue').textContent = upperPrice.toLocaleString();
+      document.getElementById('currentValue').textContent = currentPrice.toLocaleString();
+      document.getElementById('lowerDisplay').textContent = '$' + lowerPrice.toLocaleString();
+      document.getElementById('upperDisplay').textContent = '$' + upperPrice.toLocaleString();
+
+      const statusBadge = document.getElementById('statusBadge');
+      statusBadge.textContent = inRange ? 'In Range' : 'Out of Range';
+      statusBadge.className = 'status-badge ' + (inRange ? 'in-range' : 'out-of-range');
+
+      document.getElementById('ethBar').style.width = composition.ethPercent + '%';
+      document.getElementById('usdBar').style.width = composition.usdPercent + '%';
+      document.getElementById('ethPercent').textContent = composition.ethPercent.toFixed(0) + '%';
+      document.getElementById('usdPercent').textContent = composition.usdPercent.toFixed(0) + '%';
+
+      document.getElementById('efficiencyValue').textContent = efficiency.toFixed(1) + 'x';
+      document.getElementById('capitalNeeded').textContent = (100 / efficiency).toFixed(0) + '%';
+
+      document.getElementById('rangeWidth').textContent =
+        '$' + rangeWidth.toLocaleString() + ' (' + rangeWidthPercent.toFixed(0) + '%)';
+
+      const distLower = currentPrice - lowerPrice;
+      const distUpper = upperPrice - currentPrice;
+      document.getElementById('distLower').textContent =
+        (distLower > 0 ? '$' + distLower.toFixed(0) : 'Below') +
+        (distLower > 0 ? ' (' + (distLower / currentPrice * 100).toFixed(0) + '%)' : '');
+      document.getElementById('distUpper').textContent =
+        (distUpper > 0 ? '$' + distUpper.toFixed(0) : 'Above') +
+        (distUpper > 0 ? ' (' + (distUpper / currentPrice * 100).toFixed(0) + '%)' : '');
+
+      // Clear canvas
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(0, 0, width, height);
+
+      const minPrice = 100;
+      const maxPrice = 2000;
+
+      const priceToX = (p) => padding + (width - 2 * padding) * ((p - minPrice) / (maxPrice - minPrice));
+
+      // Draw grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const x = padding + (width - 2 * padding) * i / 5;
+        ctx.beginPath();
+        ctx.moveTo(x, padding);
+        ctx.lineTo(x, height - padding);
+        ctx.stroke();
+      }
+
+      // Liquidity visualization height
+      const chartHeight = height - 2 * padding;
+      const baseY = height - padding;
+
+      // Draw full range liquidity (v2 style) - very short bar
+      const v2Height = chartHeight * 0.15;
+      ctx.fillStyle = 'rgba(0, 217, 255, 0.2)';
+      ctx.fillRect(padding, baseY - v2Height, width - 2 * padding, v2Height);
+
+      // Draw concentrated liquidity - taller bar in range
+      const concentratedHeight = Math.min(chartHeight * 0.9, v2Height * efficiency);
+      const lowerX = priceToX(lowerPrice);
+      const upperX = priceToX(upperPrice);
+
+      ctx.fillStyle = inRange ? 'rgba(255, 159, 67, 0.4)' : 'rgba(255, 159, 67, 0.2)';
+      ctx.fillRect(lowerX, baseY - concentratedHeight, upperX - lowerX, concentratedHeight);
+
+      // Draw range boundaries
+      ctx.strokeStyle = '#ff9f43';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+
+      ctx.beginPath();
+      ctx.moveTo(lowerX, padding);
+      ctx.lineTo(lowerX, baseY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(upperX, padding);
+      ctx.lineTo(upperX, baseY);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+
+      // Draw current price line
+      const currentX = priceToX(currentPrice);
+      ctx.strokeStyle = '#51cf66';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(currentX, padding);
+      ctx.lineTo(currentX, baseY);
+      ctx.stroke();
+
+      // Draw current price dot
+      ctx.beginPath();
+      ctx.arc(currentX, baseY - concentratedHeight / 2, 8, 0, Math.PI * 2);
+      ctx.fillStyle = inRange ? '#51cf66' : '#ff6b6b';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Labels
+      ctx.fillStyle = '#ff9f43';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('$' + lowerPrice, lowerX, padding - 10);
+      ctx.fillText('$' + upperPrice, upperX, padding - 10);
+
+      // Efficiency comparison arrows
+      const arrowX = width - padding - 60;
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+
+      // V2 label
+      ctx.fillStyle = '#00d9ff';
+      ctx.fillText('v2: 1x', padding + 10, baseY - v2Height / 2 + 4);
+
+      // Concentrated label
+      if (upperX - lowerX > 60) {
+        ctx.fillStyle = '#ff9f43';
+        ctx.textAlign = 'center';
+        ctx.fillText(efficiency.toFixed(1) + 'x', (lowerX + upperX) / 2, baseY - concentratedHeight - 10);
+      }
+
+      // X-axis labels
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      for (let i = 0; i <= 5; i++) {
+        const price = minPrice + (maxPrice - minPrice) * i / 5;
+        const x = priceToX(price);
+        ctx.fillText('$' + price.toFixed(0), x, height - padding + 20);
+      }
+
+      // Axis title
+      ctx.fillStyle = '#888';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('ETH Price', width / 2, height - 10);
+
+      // Y-axis label
+      ctx.save();
+      ctx.translate(15, height / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Liquidity Depth', 0, 0);
+      ctx.restore();
+    }
+
+    // Event listeners
+    lowerSlider.addEventListener('input', draw);
+    upperSlider.addEventListener('input', draw);
+    currentSlider.addEventListener('input', draw);
+    window.addEventListener('resize', draw);
+
+    // Initial draw
+    draw();
+  </script>
+</body>
+</html>
