@@ -21,6 +21,9 @@ Watch a position's health factor change as prices move. Visualize collateral val
 ### Concentrated Liquidity
 See how narrowing your price range increases capital efficiency (Uniswap v3 style). Compare concentrated vs full-range liquidity.
 
+### Seed Phrase Entropy
+Visualize why nobody can guess your seed phrase. Pick words one-by-one and watch the combinations grow to astronomical numbers that dwarf atoms in the universe.
+
 ## Usage
 
 Open any HTML file in a browser. No build step, no dependencies.
