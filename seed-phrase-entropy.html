@@ -245,13 +245,44 @@
       color: #666;
       margin-top: 8px;
     }
+    .disclaimer {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+    .disclaimer-title {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .disclaimer ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .disclaimer li {
+      margin-bottom: 8px;
+    }
+    .disclaimer strong {
+      color: #999;
+    }
     .section-title {
       font-size: 14px;
       color: #888;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
       text-align: center;
+    }
+    .scale-note {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 16px;
     }
     .word-toggle {
       display: flex;
@@ -310,6 +341,7 @@
 
     <div class="card">
       <div class="section-title">How Big Is This Number?</div>
+      <div class="scale-note">Progress bars use a logarithmic scale to visualize exponential growth</div>
       <div class="comparisons" id="comparisons"></div>
     </div>
 
@@ -317,8 +349,18 @@
       <div class="time-section">
         <div class="time-label">Time to try all combinations at 1 trillion guesses/second</div>
         <div class="time-value" id="timeValue">0 seconds</div>
-        <div class="time-note">Even with all computers on Earth combined, this is impossible</div>
+        <div class="time-note" id="timeNote">Easily crackable — keep adding words!</div>
       </div>
+    </div>
+
+    <div class="card disclaimer">
+      <div class="disclaimer-title">ℹ️ Simplifications</div>
+      <p style="margin: 0 0 12px 0;">This is an educational visualization, not a technical specification. Some details are simplified:</p>
+      <ul>
+        <li><strong>Word selection:</strong> Real BIP39 generates random entropy bits first, then encodes them as words — not picked one-by-one like a slot machine.</li>
+        <li><strong>Brute force time:</strong> Doesn't account for current limitations (key derivation) nor future quantum breakthroughs — real attacks are much slower today, but quantum computing is a factor to prepare for.</li>
+        <li><strong>Passphrase:</strong> BIP39 supports an optional passphrase ("25th word") for additional security, not shown here.</li>
+      </ul>
     </div>
   </div>
 
@@ -470,6 +512,19 @@
       const secondsNeeded = totalFloat / guessesPerSecond;
       const timeStr = formatTime(secondsNeeded);
       document.getElementById('timeValue').textContent = timeStr;
+
+      // Update time note based on difficulty
+      const timeNote = document.getElementById('timeNote');
+      const years = secondsNeeded / 31536000;
+      if (secondsNeeded < 3600) { // less than an hour
+        timeNote.textContent = 'Easily crackable — keep adding words!';
+      } else if (secondsNeeded < 31536000) { // less than a year
+        timeNote.textContent = 'Getting harder, but still vulnerable';
+      } else if (years < 1e9) { // less than a billion years
+        timeNote.textContent = 'Impractical to crack';
+      } else {
+        timeNote.textContent = 'Even with all computers on Earth combined, this is impossible';
+      }
 
       // Update buttons
       const btn = document.getElementById('spinBtn');
