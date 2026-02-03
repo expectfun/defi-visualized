@@ -223,6 +223,50 @@
     .reserve-value.token-y {
       color: #ff9f43;
     }
+    .reserve-input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #2a2a3e;
+      color: #e4e4e4;
+      font-size: 16px;
+      text-align: center;
+      outline: none;
+    }
+    .reserve-input:focus {
+      border-color: #00d9ff;
+    }
+    .token-input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #2a2a3e;
+      color: #e4e4e4;
+      font-size: 14px;
+      text-align: center;
+      outline: none;
+    }
+    .token-input:focus {
+      border-color: #00d9ff;
+    }
+    .disclaimer-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cfcfcf;
+      margin-bottom: 10px;
+    }
+    .disclaimer p,
+    .disclaimer li {
+      color: #b0b0b0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .disclaimer ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -239,18 +283,17 @@
         <div class="card">
           <div class="pool-reserves">
             <div class="reserve">
-              <div class="reserve-label">Token X</div>
-              <div class="reserve-value" id="reserveX">1000</div>
+              <input class="token-input" type="text" id="tokenXName" value="Token X" maxlength="12">
+              <input class="reserve-input" type="number" id="reserveXInput" value="1000" min="1" step="1">
             </div>
             <div class="reserve">
-              <div class="reserve-label">Token Y</div>
-              <div class="reserve-value token-y" id="reserveY">1000</div>
+              <input class="token-input" type="text" id="tokenYName" value="Token Y" maxlength="12">
+              <input class="reserve-input" type="number" id="reserveYInput" value="1000" min="1" step="1">
             </div>
           </div>
 
           <div class="control-group">
             <label>Pool Liquidity (k = x × y)</label>
-            <input type="range" id="liquidity" min="100000" max="10000000" value="1000000" step="100000">
             <div style="margin-top: 4px; color: #666; font-size: 13px;">k = <span id="kValue">1,000,000</span></div>
           </div>
         </div>
@@ -294,6 +337,7 @@
             </div>
           </div>
         </div>
+
       </div>
 
       <div class="card chart-card">
@@ -314,6 +358,17 @@
         </div>
       </div>
     </div>
+
+    <div class="card disclaimer" style="margin-top: 20px;">
+      <div class="disclaimer-title">ℹ️ Simplifications</div>
+      <p style="margin: 0 0 10px 0;">This is an educational visualization, not a technical specification. Some details are simplified:</p>
+      <ul>
+        <li><strong>No Fees:</strong> Real AMMs charge swap fees, which worsen execution price.</li>
+        <li><strong>Manual Reserves:</strong> You set pool reserves directly; this doesn’t simulate deposits/withdrawals or market-driven rebalancing.</li>
+        <li><strong>Single-Swap View:</strong> The pool doesn’t persist state after a swap, so consecutive swaps are not modeled.</li>
+        <li><strong>External Markets:</strong> Ignores outside prices, arbitrage, and liquidity provider behavior.</li>
+      </ul>
+    </div>
   </div>
 
   <script>
@@ -326,8 +381,11 @@
     let swapDirection = 'xy'; // 'xy' means swap X for Y
     let swapAmount = 100;
 
-    const liquiditySlider = document.getElementById('liquidity');
     const swapAmountInput = document.getElementById('swapAmount');
+    const reserveXInput = document.getElementById('reserveXInput');
+    const reserveYInput = document.getElementById('reserveYInput');
+    const tokenXNameInput = document.getElementById('tokenXName');
+    const tokenYNameInput = document.getElementById('tokenYName');
 
     function setupCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -373,9 +431,16 @@
       const height = rect.height;
       const padding = 50;
 
-      // Update reserves based on k (keeping ratio 1:1 for simplicity)
-      reserveX = Math.sqrt(k);
-      reserveY = Math.sqrt(k);
+      // Update reserves from inputs
+      reserveX = parseFloat(reserveXInput.value) || 0;
+      reserveY = parseFloat(reserveYInput.value) || 0;
+      if (reserveX <= 0 || reserveY <= 0) {
+        reserveX = 1000;
+        reserveY = 1000;
+        reserveXInput.value = reserveX;
+        reserveYInput.value = reserveY;
+      }
+      k = reserveX * reserveY;
 
       // Clear
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
@@ -503,13 +568,14 @@
       ctx.restore();
 
       // Update UI
-      document.getElementById('reserveX').textContent = formatNumber(reserveX);
-      document.getElementById('reserveY').textContent = formatNumber(reserveY);
       document.getElementById('kValue').textContent = k.toLocaleString();
 
-      const inToken = swapDirection === 'xy' ? 'X' : 'Y';
-      const outToken = swapDirection === 'xy' ? 'Y' : 'X';
+      const tokenXName = tokenXNameInput.value.trim() || 'Token X';
+      const tokenYName = tokenYNameInput.value.trim() || 'Token Y';
+      const inToken = swapDirection === 'xy' ? tokenXName : tokenYName;
+      const outToken = swapDirection === 'xy' ? tokenYName : tokenXName;
 
+      document.getElementById('inputToken').textContent = inToken;
       document.getElementById('sendAmount').textContent = `${formatNumber(inputAmount)} ${inToken}`;
       document.getElementById('receiveAmount').textContent = inputAmount > 0 ? `${formatNumber(swap.amountOut)} ${outToken}` : `— ${outToken}`;
       document.getElementById('spotPrice').textContent = `1 ${inToken} = ${spotPrice.toFixed(4)} ${outToken}`;
@@ -523,12 +589,11 @@
     }
 
     // Event listeners
-    liquiditySlider.addEventListener('input', () => {
-      k = parseInt(liquiditySlider.value);
-      draw();
-    });
-
     swapAmountInput.addEventListener('input', draw);
+    reserveXInput.addEventListener('input', draw);
+    reserveYInput.addEventListener('input', draw);
+    tokenXNameInput.addEventListener('input', draw);
+    tokenYNameInput.addEventListener('input', draw);
 
     window.addEventListener('resize', draw);
 
