@@ -123,6 +123,7 @@
       display: flex;
       gap: 8px;
       margin-bottom: 16px;
+      flex-direction: column;
     }
     .swap-direction button {
       flex: 1;
@@ -277,10 +278,6 @@
     <div class="main-layout">
       <div class="sidebar">
         <div class="card">
-          <div class="formula">x × y = k</div>
-        </div>
-
-        <div class="card">
           <div class="pool-reserves">
             <div class="reserve">
               <input class="token-input" type="text" id="tokenXName" value="Token X" maxlength="12">
@@ -300,8 +297,8 @@
 
         <div class="card">
           <div class="swap-direction">
-            <button id="swapXY" class="active" onclick="setDirection('xy')">Swap X → Y</button>
-            <button id="swapYX" onclick="setDirection('yx')">Swap Y → X</button>
+            <button id="swapXY" class="active" onclick="setDirection('xy')" title="Swap Token X → Token Y">Swap Token X → Token Y</button>
+            <button id="swapYX" onclick="setDirection('yx')" title="Swap Token Y → Token X">Swap Token Y → Token X</button>
           </div>
 
           <div class="control-group">
@@ -399,6 +396,7 @@
 
     function setDirection(dir) {
       swapDirection = dir;
+      updateSwapButtons();
       document.getElementById('swapXY').classList.toggle('active', dir === 'xy');
       document.getElementById('swapYX').classList.toggle('active', dir === 'yx');
       document.getElementById('inputToken').textContent = dir === 'xy' ? 'Token X' : 'Token Y';
@@ -572,6 +570,7 @@
 
       const tokenXName = tokenXNameInput.value.trim() || 'Token X';
       const tokenYName = tokenYNameInput.value.trim() || 'Token Y';
+      updateSwapButtons(tokenXName, tokenYName);
       const inToken = swapDirection === 'xy' ? tokenXName : tokenYName;
       const outToken = swapDirection === 'xy' ? tokenYName : tokenXName;
 
@@ -594,6 +593,15 @@
     reserveYInput.addEventListener('input', draw);
     tokenXNameInput.addEventListener('input', draw);
     tokenYNameInput.addEventListener('input', draw);
+
+    function updateSwapButtons(tokenX = 'Token X', tokenY = 'Token Y') {
+      const swapXY = document.getElementById('swapXY');
+      const swapYX = document.getElementById('swapYX');
+      swapXY.textContent = `Swap ${tokenX} → ${tokenY}`;
+      swapYX.textContent = `Swap ${tokenY} → ${tokenX}`;
+      swapXY.title = swapXY.textContent;
+      swapYX.title = swapYX.textContent;
+    }
 
     window.addEventListener('resize', draw);
 
