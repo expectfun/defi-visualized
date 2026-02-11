@@ -217,46 +217,72 @@
       font-weight: bold;
       color: #aaa;
     }
+    .token-input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #2a2a3e;
+      color: #e4e4e4;
+      font-size: 13px;
+      text-align: center;
+      outline: none;
+    }
+    .token-input:focus {
+      border-color: #00d9ff;
+    }
+    .disclaimer-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cfcfcf;
+      margin-bottom: 10px;
+    }
+    .disclaimer p,
+    .disclaimer li {
+      color: #b0b0b0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .disclaimer ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+    <a href="index.html" style="color: #00d9ff; text-decoration: none; font-size: 18px; display: inline-block; margin-bottom: 8px;" title="Home">
+      🏠
+    </a>
     <h1>Impermanent Loss</h1>
     <p class="subtitle">See how price changes affect liquidity providers</p>
 
     <div class="main-layout">
       <div class="sidebar">
         <div class="card">
-          <div class="formula">
-            IL = 2√r / (1 + r) − 1<br>
-            <span style="color: #666;">where r = price ratio</span>
-          </div>
-        </div>
-
-        <div class="card">
           <div class="initial-position">
             <div class="initial-token">
-              <div class="initial-token-label">Initial ETH</div>
-              <div class="initial-token-value">1 ETH</div>
+              <input class="token-input" type="text" id="tokenXName" value="Token X" maxlength="12">
+              <div class="initial-token-value">1 <span class="token-x-label">Token X</span></div>
             </div>
             <div class="initial-token">
-              <div class="initial-token-label">Initial USD</div>
-              <div class="initial-token-value" id="initialUsd">$1,000</div>
+              <div class="initial-token-label">USD</div>
+              <div class="initial-token-value" id="initialUsd">$100</div>
             </div>
           </div>
 
           <div class="control-group">
-            <label>Initial ETH Price: <span class="value-display">$<span id="initialPriceDisplay">1,000</span></span></label>
-            <input type="range" id="initialPrice" min="100" max="5000" value="1000" step="100">
+            <label>Initial <span class="token-x-label">Token X</span> Price: <span class="value-display">$<span id="initialPriceDisplay">100</span></span></label>
+            <input type="range" id="initialPrice" min="10" max="500" value="100" step="10">
           </div>
 
           <div class="control-group">
-            <label>Current ETH Price: <span class="value-display">$<span id="currentPriceDisplay">1,000</span></span></label>
-            <input type="range" id="currentPrice" min="100" max="5000" value="1000" step="10">
+            <label>Current <span class="token-x-label">Token X</span> Price: <span class="value-display">$<span id="currentPriceDisplay">100</span></span></label>
+            <input type="range" id="currentPrice" min="10" max="500" value="100" step="1">
             <div class="price-display">
-              <span>$100</span>
+              <span>$10</span>
               <span id="priceChange">0% change</span>
-              <span>$5,000</span>
+              <span>$500</span>
             </div>
           </div>
         </div>
@@ -283,6 +309,13 @@
             <div class="il-note" id="ilNote">No loss when price unchanged</div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="formula">
+            IL = 2√r / (1 + r) − 1<br>
+            <span style="color: #666;">where r = price ratio</span>
+          </div>
+        </div>
       </div>
 
       <div class="card chart-card">
@@ -306,6 +339,18 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="card disclaimer" style="margin-top: 20px;">
+      <div class="disclaimer-title">ℹ️ Simplifications</div>
+      <p style="margin: 0 0 10px 0;">This is an educational visualization, not a technical specification. Some details are simplified:</p>
+      <ul>
+        <li><strong>No LP Fees:</strong> Real pools charge trading fees (typically 0.05%–1%), which can offset impermanent loss over time.</li>
+        <li><strong>No Incentive Rewards:</strong> Many protocols offer additional token rewards for liquidity providers, not shown here.</li>
+        <li><strong>Constant Product AMM:</strong> Uses the classic Uniswap v2 formula (x × y = k). Modern DEXs use concentrated liquidity and other optimizations.</li>
+        <li><strong>Single Position:</strong> Assumes a simple 50/50 split. Real strategies may use multiple ranges or hedging.</li>
+        <li><strong>Stable Reference:</strong> One side is shown in USD for clarity. Real pools often pair two volatile tokens, making value tracking more complex.</li>
+      </ul>
     </div>
   </div>
 
@@ -392,13 +437,15 @@
       document.getElementById('priceChange').textContent =
         (priceChangePercent >= 0 ? '+' : '') + priceChangePercent.toFixed(0) + '% change';
 
+      const tokenXName = document.getElementById('tokenXName').value.trim() || 'Token X';
+
       document.getElementById('hodlValue').textContent = formatCurrency(hodl.total);
       document.getElementById('hodlDetail').textContent =
-        `${hodl.eth.toFixed(2)} ETH + $${hodl.usd.toFixed(0)}`;
+        `${hodl.eth.toFixed(2)} ${tokenXName} + $${hodl.usd.toFixed(0)}`;
 
       document.getElementById('lpValue').textContent = formatCurrency(lp.total);
       document.getElementById('lpDetail').textContent =
-        `${lp.eth.toFixed(2)} ETH + $${lp.usd.toFixed(0)}`;
+        `${lp.eth.toFixed(2)} ${tokenXName} + $${lp.usd.toFixed(0)}`;
 
       const ilPercent = Math.abs(il * 100);
       const ilValueEl = document.getElementById('ilValue');
@@ -418,13 +465,13 @@
       ctx.fillRect(0, 0, width, height);
 
       // Calculate ranges for chart
-      const minPrice = 100;
-      const maxPrice = 5000;
+      const minPrice = 10;
+      const maxPrice = 500;
 
       // Find max values for y-axis
       let maxValue = 0;
       let maxIL = 0;
-      for (let p = minPrice; p <= maxPrice; p += 50) {
+      for (let p = minPrice; p <= maxPrice; p += 5) {
         const h = calculateHodlValue(initialEth, initialUsd, p);
         const l = calculateLPValue(initialEth, initialUsd, initialPrice, p);
         maxValue = Math.max(maxValue, h.total, l.total);
@@ -457,7 +504,7 @@
       ctx.beginPath();
       ctx.strokeStyle = '#00d9ff';
       ctx.lineWidth = 3;
-      for (let p = minPrice; p <= maxPrice; p += 20) {
+      for (let p = minPrice; p <= maxPrice; p += 2) {
         const h = calculateHodlValue(initialEth, initialUsd, p);
         const x = priceToX(p);
         const y = valueToY(h.total);
@@ -470,7 +517,7 @@
       ctx.beginPath();
       ctx.strokeStyle = '#ff9f43';
       ctx.lineWidth = 3;
-      for (let p = minPrice; p <= maxPrice; p += 20) {
+      for (let p = minPrice; p <= maxPrice; p += 2) {
         const l = calculateLPValue(initialEth, initialUsd, initialPrice, p);
         const x = priceToX(p);
         const y = valueToY(l.total);
@@ -482,14 +529,14 @@
       // Fill the gap between HODL and LP (IL area)
       ctx.beginPath();
       ctx.fillStyle = 'rgba(255, 107, 107, 0.2)';
-      for (let p = minPrice; p <= maxPrice; p += 20) {
+      for (let p = minPrice; p <= maxPrice; p += 2) {
         const h = calculateHodlValue(initialEth, initialUsd, p);
         const x = priceToX(p);
         const y = valueToY(h.total);
         if (p === minPrice) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
-      for (let p = maxPrice; p >= minPrice; p -= 20) {
+      for (let p = maxPrice; p >= minPrice; p -= 2) {
         const l = calculateLPValue(initialEth, initialUsd, initialPrice, p);
         const x = priceToX(p);
         const y = valueToY(l.total);
@@ -548,7 +595,7 @@
       // Axis titles
       ctx.fillStyle = '#888';
       ctx.font = '14px sans-serif';
-      ctx.fillText('ETH Price', width / 2, height - 10);
+      ctx.fillText(tokenXName + ' Price', width / 2, height - 10);
       ctx.save();
       ctx.translate(15, height / 2);
       ctx.rotate(-Math.PI / 2);
@@ -568,6 +615,14 @@
     initialPriceSlider.addEventListener('input', draw);
     currentPriceSlider.addEventListener('input', draw);
     window.addEventListener('resize', draw);
+
+    const tokenXNameInput = document.getElementById('tokenXName');
+    tokenXNameInput.addEventListener('input', () => {
+      // Update all Token X labels
+      const name = tokenXNameInput.value.trim() || 'Token X';
+      document.querySelectorAll('.token-x-label').forEach(el => el.textContent = name);
+      draw();
+    });
 
     // Initial draw
     draw();
